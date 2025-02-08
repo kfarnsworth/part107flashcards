@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Quizzer</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="questionbank.js"></script>
+    <script src="regulations.js"></script>
+    <script src="airspace.js"></script>
+    <script src="weather.js"></script>
+    <script src="operations.js"></script>
+    <script src="loading.js"></script>
+</head>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    background-color: #333;
+}
+.container{
+    background-color: #555;
+    color: #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    font-family: 'Montserrat', sans-serif;
+    max-width: 700px;
+}
+.container > p{
+    font-size: 20px;
+}
+.question{
+    width: 90%;
+}
+.options{
+    position: relative;
+    padding-left: 40px;
+}
+#options label{
+    display: block;
+    margin-bottom: 15px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.options input{
+    opacity: 0;
+}
+.checkmark {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    height: 25px;
+    width: 25px;
+    background-color: #555;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+}
+.options input:checked ~ .checkmark:after {
+    display: block;
+}
+.options .checkmark:after{
+    content: "";
+	width: 10px;
+    height: 10px;
+    display: block;
+	background: white;
+    position: absolute;
+    top: 50%;
+	left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%,-50%) scale(0);
+    transition: 300ms ease-in-out 0s;
+}
+.options input[type="radio"]:checked ~ .checkmark{
+    background: #21bf73;
+    transition: 300ms ease-in-out 0s;
+}
+.options input[type="radio"]:checked ~ .checkmark:after{
+    transform: translate(-50%,-50%) scale(1);
+}
+.btn-primary{
+    background-color: #555;
+    color: #ddd;
+    border: 1px solid #ddd;
+}
+.btn-primary:hover{
+    background-color: #21bf73;
+    border: 1px solid #21bf73;
+}
+.btn-success{
+    padding: 5px 25px;
+    background-color: #21bf73;
+}
+.grade{
+    color: white;
+}
+@media(max-width:576px){
+    .question{
+        width: 100%;
+        word-spacing: 2px;
+    } 
+}
+</style>
+<body>
+
+<div class="row justify-content-center">
+    <h1 class="text-light">FAA Part 107 sUAS Flash Cards</h1>
+</div>
+<div class="row">
+    <div class="col-2">
+    </div>
+    <div class="col-3">
+        <select data-mdb-select-init class="form-control input-sm" id="section-select">
+            <option value="0">Regulations</option>
+            <option value="1">Airspace</option>
+            <option value="2">Weather</option>
+            <option value="3">Loading & Performance</option>
+            <option value="4">Operations</option>
+        </select>
+    </div>
+    <div class="col-2">
+        <button class="btn btn-info" onclick="loadselect()">Load Section</button>
+    </div>
+</div>
+<div class="row">
+    <div class="col-1">
+    </div>
+    <div class="col-7">
+        <div class="container mt-sm-5 my-1">
+            <div class="d-flex align-items-center pt-3">
+                <div id="prev">
+                    <button class="btn btn-primary" onclick="prev_question()">Previous</button>
+                </div>
+                <div class="mx-auto">
+                    <a href="images/default.png" target="_blank" id="figure-link" hidden>Click for Figure</a>
+                </div>
+                <div class="ml-auto mr-sm-5">
+                    <button class="btn btn-success" onclick="next_question()">Next</button>
+                </div>
+            </div>
+            <div class="question ml-sm-5 pl-sm-3 pt-2">
+                <div class="py-2 h5"><label id="question"><b>Q?</b></label></div>
+                <div class="ml-md-3 ml-sm-3 pl-md-5 pt-sm-0 pt-3" id="options">
+                    <label class="options"><span id="answerA">A1</span>
+                        <input type="radio" name="radio" id="radioA">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label class="options"><span id="answerB">A2</span>
+                        <input type="radio" name="radio" id="radioB">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label class="options"><span id="answerC">A3</span>
+                        <input type="radio" name="radio" id="radioC">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="container mt-sm-5 my-1" id="answer_panel">
+            <div class="py-2 h5"><label id="answerFinal"><b></b></label></div>
+            <div class="py-2 h5"><label id="explainFinal"><b></b></label></div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-2">
+    </div>
+    <div class="col-6 d-flex align-items-center pt-3">
+        <div>
+            <button class="btn btn-danger" onclick="grade_now()" id="grade-button">Grade Now</button>
+        </div>
+        <div class="mx-auto">
+            <label id="grade"></label>
+        </div>
+        <div class="ml-auto mr-sm-5" id="answer">
+            <button class="btn btn-secondary" onclick="show_answer()">Show Answer</button>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+
+<script>
+    var qanswer = [];
+    var qdata = null;
+    var adata = null;
+    var qix = 0;
+    var graded = false;
+
+    $(document).ready(function() {
+        $('input[type="radio"][name="radio"]').change(function() {
+            if (this.id == "radioA")
+                qanswer[qix] = 1;
+            if (this.id == "radioB")
+                qanswer[qix] = 2;
+            if (this.id == "radioC")
+                qanswer[qix] = 3;
+            check_all_completed();
+        });
+        setup_bank(regsQbank, regsAbank);
+        update_question();
+    });
+
+    function loadselect() {
+        var section = $('#section-select').val();
+        if (section == 0) setup_bank(regsQbank, regsAbank);
+        if (section == 1) setup_bank(airQbank,  airAbank);
+        if (section == 2) setup_bank(wxQbank,   wxAbank);
+        if (section == 3) setup_bank(loadQbank, loadAbank);
+        if (section == 4) setup_bank(operQbank, operAbank);
+        update_question();
+    }
+
+    function setup_bank(qs, as) {
+        qdata = qs;
+        adata = as;
+        qix=0;
+        qanswer = new Array(qs.length).fill(0);
+        $('#grade').text("");
+        $('#answerA').css('color', 'white');
+        $('#answerB').css('color', 'white');
+        $('#answerC').css('color', 'white');
+        $('#grade-button').prop('disabled', true);
+        graded = false;
+    }
+
+    function next_question() {
+        qix++;
+        update_question();
+    }
+    function prev_question() {
+        qix--;
+        update_question();
+    }
+    
+    function show_answer() {
+        if (qix < 0 ||  qix >= adata.length)
+            return;
+        var a = adata[qix];
+        let correct = a["correct"];
+        let explain = a["explain"];
+        $('#answerFinal').text((qix+1) + ". " + correct);
+        $('#explainFinal').text(explain);
+        $('#answer_panel').show();
+    }
+
+    function update_question() {
+        if (qix < 0)
+            qix=0;
+        if (qix >= qdata.length)
+            qix = qdata.length-1;
+        var o = qdata[qix];
+        $('input[type="radio"][name="radio"]').prop('checked', false);
+        var qstr = o["question"];
+        if (o.hasOwnProperty('figure')) {
+            $('#figure-link').attr("href", "images/" + o["figure"]);
+            $('#figure-link').prop("hidden", false);   
+        }
+        else {
+            $('#figure-link').prop("hidden", true);
+        }
+        $('#question').text((qix+1) + "/" + qdata.length + ". " + qstr);
+        $('#answerA').text("A. " + o["answers"][0]);
+        $('#answerB').text("B. " + o["answers"][1]);
+        $('#answerC').text("C. " + o["answers"][2]);
+        if (qanswer[qix] == 1) {
+            $('#radioA').prop('checked', true);
+            if (graded) {
+                if (adata[qix]["correct"] == "A")
+                    $('#answerA').css('color', 'green');
+                else
+                    $('#answerA').css('color', 'red');
+            }
+        }
+        else if (qanswer[qix] == 2) {
+            $('#radioB').prop('checked', true);
+            if (graded) {
+                if (adata[qix]["correct"] == "B")
+                    $('#answerB').css('color', 'green');
+                else
+                    $('#answerB').css('color', 'red');
+            }
+        }
+        else if (qanswer[qix] == 3) {
+            $('#radioC').prop('checked', true);
+            if (graded) {
+                if (adata[qix]["correct"] == "C")
+                    $('#answerC').css('color', 'green');
+                else
+                    $('#answerC').css('color', 'red');
+            }
+        }
+        if (graded) {
+            if (adata[qix]["correct"] == "A") {
+                $('#answerA').css('color', 'green');
+                $('#answerB').css('color', (qanswer[qix] == 2) ? 'red' : 'white');
+                $('#answerC').css('color', (qanswer[qix] == 3) ? 'red' : 'white');
+            }
+            else if (adata[qix]["correct"] == "B") {
+                $('#answerB').css('color', 'green');
+                $('#answerA').css('color', (qanswer[qix] == 1) ? 'red' : 'white');
+                $('#answerC').css('color', (qanswer[qix] == 3) ? 'red' : 'white');
+            }
+            else if (adata[qix]["correct"] == "C") {
+                $('#answerC').css('color', 'green');
+                $('#answerA').css('color', (qanswer[qix] == 1) ? 'red' : 'white');
+                $('#answerB').css('color', (qanswer[qix] == 2) ? 'red' : 'white');
+            }
+        } else {
+            $('#answerA').css('color', 'white');
+            $('#answerB').css('color', 'white');
+            $('#answerC').css('color', 'white');
+        }
+        $('#answer_panel').hide();
+    }
+    
+    function check_all_completed() {
+        var done = true;
+        for (var i=0; i<qanswer.length; i++) {
+            if (qanswer[i] == 0) {
+                done = false;
+                break;
+            }
+        }
+        $('#grade-button').prop('disabled', !done);
+    }
+
+    function grade_now() {
+        var totalCorrect = 0;
+        for (var i=0; i<adata.length; i++) {
+            var astr = "";
+            if (qanswer[i] == 1)
+                astr = "A"
+            else if (qanswer[i] == 2)
+                astr = "B"
+            else if (qanswer[i] == 3)
+                astr = "C"
+            if (astr === adata[i]["correct"])
+                totalCorrect++;
+        }
+        var value = "Grade: " + Math.round(100*(totalCorrect/adata.length)) + "%";
+        $('#grade').text(value);
+        graded = true;
+        $('#grade-button').prop('disabled', true);
+        update_question();
+    }
+</script>
+      
+</html>
